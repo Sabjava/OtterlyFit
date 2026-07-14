@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSCameraUsageDescription</key>
+	<string>OtterlyFit needs camera access to scan exercise cards.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>OtterlyFit needs photo library access to import exercise card images.</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Fredoka-Variable.ttf</string>
+	</array>
+</dict>
+</plist>

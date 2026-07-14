@@ -1,0 +1,100 @@
+import Foundation
+import SwiftData
+
+@MainActor
+@Observable
+final class RoutineBuilderViewModel {
+    let routine: Routine
+    var blocks: [RoutineExercise] = []
+    var availableExercises: [Exercise] = []
+    var errorMessage: String?
+
+    init(routine: Routine) {
+        self.routine = routine
+        reloadBlocks()
+    }
+
+    var estimatedDurationText: String {
+        RoutineDurationCalculator.formattedDuration(routine.estimatedDuration)
+    }
+
+    func reloadBlocks() {
+        blocks = routine.exercises.sorted { $0.order < $1.order }
+    }
+
+    func loadExercises(using context: ModelContext) async {
+        do {
+            let repository = ExerciseRepository(context: context)
+            availableExercises = try await repository.fetchAll()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func addExercise(_ exercise: Exercise, using context: ModelContext) async {
+        do {
+            let repository = RoutineRepository(context: context)
+            _ = try await repository.addExercise(exercise, to: routine)
+            refreshEstimatedDuration(using: context)
+            reloadBlocks()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func moveBlocks(from source: IndexSet, to destination: Int, using context: ModelContext) async {
+        var reordered = blocks
+        reordered.move(fromOffsets: source, toOffset: destination)
+        blocks = reordered
+
+        do {
+            let repository = RoutineRepository(context: context)
+            try await repository.reorder(
+                routine: routine,
+                orderedBlockIDs: reordered.map(\.id)
+            )
+            refreshEstimatedDuration(using: context)
+            reloadBlocks()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func duplicateBlock(_ block: RoutineExercise, using context: ModelContext) async {
+        do {
+            let repository = RoutineRepository(context: context)
+            _ = try await repository.duplicateBlock(block)
+            refreshEstimatedDuration(using: context)
+            reloadBlocks()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func removeBlock(_ block: RoutineExercise, using context: ModelContext) async {
+        do {
+            let repository = RoutineRepository(context: context)
+            try await repository.removeBlock(block, from: routine)
+            refreshEstimatedDuration(using: context)
+            reloadBlocks()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func saveBlock(_ block: RoutineExercise, using context: ModelContext) async {
+        do {
+            let repository = RoutineRepository(context: context)
+            try await repository.update(routine)
+            refreshEstimatedDuration(using: context)
+            reloadBlocks()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func refreshEstimatedDuration(using context: ModelContext) {
+        routine.estimatedDuration = RoutineDurationCalculator.estimatedDuration(for: blocks)
+        try? context.save()
+    }
+}
