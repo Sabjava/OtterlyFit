@@ -28,7 +28,7 @@ struct ExerciseBlockConfigView: View {
             }
 
             Section("Optional") {
-                TextField("Weight (kg)", text: $weightText)
+                TextField("Weight (lb)", text: $weightText)
                     .keyboardType(.decimalPad)
                 TextField("Notes", text: $block.notes, axis: .vertical)
                     .lineLimit(2...5)

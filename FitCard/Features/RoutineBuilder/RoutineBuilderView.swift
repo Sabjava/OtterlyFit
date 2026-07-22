@@ -26,26 +26,28 @@ struct RoutineBuilderView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(viewModel.blocks, id: \.id) { block in
-                        Button {
-                            selectedBlock = block
-                        } label: {
-                            RoutineBlockRowView(block: block)
-                        }
-                        .buttonStyle(.plain)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive) {
-                                Task { await viewModel.removeBlock(block, using: modelContext) }
-                            } label: {
-                                Label("Delete", systemImage: "trash")
+                        RoutineBlockRowView(block: block)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                selectedBlock = block
                             }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    Task { await viewModel.removeBlock(block, using: modelContext) }
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
 
-                            Button {
-                                Task { await viewModel.duplicateBlock(block, using: modelContext) }
-                            } label: {
-                                Label("Duplicate", systemImage: "plus.square.on.square")
+                                Button {
+                                    Task { await viewModel.duplicateBlock(block, using: modelContext) }
+                                } label: {
+                                    Label("Duplicate", systemImage: "plus.square.on.square")
+                                }
+                                .tint(.blue)
                             }
-                            .tint(.blue)
-                        }
+                    }
+                    .onDelete { offsets in
+                        Task { await viewModel.removeBlocks(at: offsets, using: modelContext) }
                     }
                     .onMove { source, destination in
                         Task {

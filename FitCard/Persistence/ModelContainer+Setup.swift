@@ -41,21 +41,22 @@ extension ModelContainer {
     }
 
     @MainActor
+    static func seedDefaultExercisesIfNeeded() {
+        DefaultExerciseData.seedIfNeeded(into: shared.mainContext)
+    }
+
+    @MainActor
     static func seedSampleDataIfNeeded() {
+        seedDefaultExercisesIfNeeded()
+
         #if DEBUG
         let context = shared.mainContext
-        let exerciseDescriptor = FetchDescriptor<Exercise>()
-        let existingExerciseCount = (try? context.fetchCount(exerciseDescriptor)) ?? 0
-
-        if existingExerciseCount == 0 {
-            PreviewData.insertSampleData(into: context)
-            try? context.save()
-            return
-        }
-
         let workoutDescriptor = FetchDescriptor<Workout>()
         let existingWorkoutCount = (try? context.fetchCount(workoutDescriptor)) ?? 0
         guard existingWorkoutCount == 0 else { return }
+
+        let routines = try? context.fetch(FetchDescriptor<Routine>())
+        guard routines?.contains(where: { $0.name == "Morning Strength" }) == true else { return }
 
         PreviewData.insertSampleWorkout(into: context)
         try? context.save()
@@ -67,6 +68,7 @@ extension ModelContainer {
         do {
             let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
             let container = try ModelContainer(for: FitCardSchema.schema, configurations: [configuration])
+            DefaultExerciseData.seedIfNeeded(into: container.mainContext)
             PreviewData.insertSampleData(into: container.mainContext)
             return container
         } catch {

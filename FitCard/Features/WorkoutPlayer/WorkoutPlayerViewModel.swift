@@ -183,20 +183,17 @@ final class WorkoutPlayerViewModel {
     }
 
     func pause() {
-        speakButton("Pause")
         service.pause()
         syncFromService()
     }
 
     func resume() {
-        speakButton("Resume")
         service.resume()
         syncFromService()
         capturePhaseStart(from: state)
     }
 
     func nextSet() {
-        speakButton("Next set")
         resumeIfPaused()
 
         let before = state
@@ -219,8 +216,6 @@ final class WorkoutPlayerViewModel {
     }
 
     func restComplete() {
-        speakButton("End rest")
-
         resumeIfPaused()
         guard case .resting = state else { return }
         let before = state
@@ -232,7 +227,6 @@ final class WorkoutPlayerViewModel {
     }
 
     func finish() {
-        speakButton("Finish")
         resumeIfPaused()
 
         let before = state
@@ -502,48 +496,64 @@ final class WorkoutPlayerViewModel {
 
         switch (previous, current) {
         case (.idle, .preparing(let count)):
-            voicePrompts.speak("Get ready. \(VoicePromptService.spokenCount(count))", interrupt: true)
+            voicePrompts.speakCountdown(count, includeReady: true, interrupt: true)
 
         case (.preparing, .preparing(let count)):
-            voicePrompts.speak(VoicePromptService.spokenCount(count), interrupt: true)
+            voicePrompts.speakCountdown(count, interrupt: true)
 
         case (.preparing, .exerciseStart(let index, _)):
-            voicePrompts.speak("Go! \(exerciseName(at: index))", interrupt: interrupt)
+            voicePrompts.speakEnergetically(startExerciseCue(for: index), interrupt: interrupt)
 
         case (.resting(_, _, _, .exerciseRest, _), .exerciseStart(let index, _)),
              (_, .exerciseStart(let index, _)) where previous.exerciseIndex != index:
-            voicePrompts.speak("Next exercise. \(exerciseName(at: index))", interrupt: interrupt)
+            voicePrompts.speakEnergetically(nextExerciseCue(for: index), interrupt: interrupt)
 
         case (.resting(_, _, _, let kind, _), .exercising(let index, _, let rep, _)):
             switch kind {
             case .exerciseRest:
                 break
             case .repRest:
-                voicePrompts.speak(VoicePromptService.spokenCount(rep + 1), interrupt: interrupt)
+                let nextRep = rep + 1
+                voicePrompts.speakRepCount(
+                    nextRep,
+                    isFirstOfSet: nextRep == 1,
+                    isLastOfSet: isLastRepOfSet(exerciseIndex: index, rep: nextRep),
+                    interrupt: interrupt
+                )
             case .setRest:
                 break
             }
 
         case (.resting(_, _, _, .setRest, _), .setStart(_, let set, _)):
-            voicePrompts.speak("Set \(VoicePromptService.spokenCount(set))", interrupt: interrupt)
+            voicePrompts.speakEnergetically(setStartCue(for: set), interrupt: interrupt)
 
-        case (.setStart, .exercising(_, _, let rep, _)),
-             (.exerciseStart, .exercising(_, _, let rep, _)):
-            voicePrompts.speak(VoicePromptService.spokenCount(rep), interrupt: interrupt)
+        case (.setStart, .exercising(let index, _, let rep, _)),
+             (.exerciseStart, .exercising(let index, _, let rep, _)):
+            voicePrompts.speakRepCount(
+                rep,
+                isFirstOfSet: rep == 1,
+                isLastOfSet: isLastRepOfSet(exerciseIndex: index, rep: rep),
+                interrupt: interrupt
+            )
 
         case let (.exercising(pIndex, pSet, pRep, _), .exercising(cIndex, cSet, cRep, _)):
             if pIndex == cIndex, pSet == cSet, cRep > pRep {
-                voicePrompts.speak(VoicePromptService.spokenCount(cRep), interrupt: interrupt)
+                voicePrompts.speakRepCount(
+                    cRep,
+                    isFirstOfSet: cRep == 1,
+                    isLastOfSet: isLastRepOfSet(exerciseIndex: cIndex, rep: cRep),
+                    interrupt: interrupt
+                )
             } else if pIndex == cIndex, cSet > pSet {
-                voicePrompts.speak("Set \(VoicePromptService.spokenCount(cSet))", interrupt: interrupt)
+                voicePrompts.speakEnergetically(setStartCue(for: cSet), interrupt: interrupt)
             }
 
         case (.exercising, .resting),
              (.preparing, .resting):
-            voicePrompts.speakSoftly("Rest")
+            voicePrompts.speakSoftly(restCue())
 
         case (_, .completed):
-            voicePrompts.speak("Workout complete. Great job!", interrupt: true)
+            voicePrompts.speakEnergetically(completionCue(), interrupt: true)
 
         default:
             break
@@ -555,8 +565,60 @@ final class WorkoutPlayerViewModel {
         return blocks[index].exerciseName
     }
 
-    private func speakButton(_ label: String) {
-        voicePrompts.speak(label, interrupt: true)
+    private func startExerciseCue(for index: Int) -> String {
+        let name = exerciseName(at: index)
+        switch index % 3 {
+        case 0:
+            return "You've got this! \(name)!"
+        case 1:
+            return "Nice and strong — \(name)!"
+        default:
+            return "Here we go, \(name)!"
+        }
+    }
+
+    private func nextExerciseCue(for index: Int) -> String {
+        let name = exerciseName(at: index)
+        switch index % 3 {
+        case 0:
+            return "Up next, \(name)! You're doing great!"
+        case 1:
+            return "Coming up — \(name)! Keep that energy!"
+        default:
+            return "Next up, \(name)! Let's keep rolling!"
+        }
+    }
+
+    private func setStartCue(for set: Int) -> String {
+        let spoken = VoicePromptService.spokenCount(set)
+        switch set % 3 {
+        case 0:
+            return "Set \(spoken)! You've got this!"
+        case 1:
+            return "Set \(spoken) — nice and steady!"
+        default:
+            return "Set \(spoken)! Let's keep it up!"
+        }
+    }
+
+    private func restCue() -> String {
+        // Light variety so rest doesn't feel like a canned loop.
+        let cues = [
+            "Beautiful — take a soft breath.",
+            "Nice work. Ease into this rest.",
+            "Great job — recover for a moment.",
+            "Well done. Soften and breathe."
+        ]
+        return cues[completedRepetitions % cues.count]
+    }
+
+    private func completionCue() -> String {
+        "You did it! What a strong finish — amazing work today!"
+    }
+
+    private func isLastRepOfSet(exerciseIndex: Int, rep: Int) -> Bool {
+        guard blocks.indices.contains(exerciseIndex) else { return false }
+        return rep == blocks[exerciseIndex].repetitions
     }
 
     private func resumeIfPaused() {

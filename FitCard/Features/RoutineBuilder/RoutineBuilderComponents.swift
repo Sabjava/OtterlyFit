@@ -112,6 +112,9 @@ struct RoutineBlockRowView: View {
 
     private var configSummary: String {
         var parts = ["\(block.sets) sets", "\(block.repetitions) reps"]
+        if let weight = block.weight {
+            parts.append("\(weight.formatted()) lb")
+        }
         if block.secondsPerRep > 0 {
             parts.append("\(block.secondsPerRep)s/rep")
         }
