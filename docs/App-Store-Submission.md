@@ -21,6 +21,8 @@ This document fills the Udacity `app-store-submission-document.docx` template 1:
 | **Bundle ID**        | `com.otterlyfit.workout`                                        |
 | **SKU**              | `otterlyfit-ios-001`                                            |
 | **User Access**      | Full Access (not limited to App Store Connect users only)       |
+| **Primary Category** | Health & Fitness                                                |
+| **Secondary Category** | Lifestyle                                                     |
 
 
 ---
@@ -154,6 +156,12 @@ Kept for comparison / fallback; **do not** prefer these over device shots for Co
 ## Product Page Copy
 
 
+
+### Subtitle
+
+Scan cards, train offline
+
+*(Max 30 characters. Shown under the app name on the product page.)*
 
 ### Promotional Text
 
@@ -400,6 +408,7 @@ Camera and Photos access are for **App Functionality** on device. On-device proc
 - [x] Launch screen generated (`INFOPLIST_KEY_UILaunchScreen_Generation = YES`)
 - [x] Camera usage description present
 - [x] Photo Library usage description present
+- [x] App Category: **Health & Fitness** (`LSApplicationCategoryType = public.app-category.healthcare-fitness`; secondary **Lifestyle** in App Store Connect)
 - [x] Automatic signing with Development Team set in project
 - [x] Debug-only sample workout seed wrapped in `#if DEBUG` (does not insert Preview workouts in Release)
 - [x] Default exercise library seeds in Release (helpful for App Review and first-run UX)
@@ -528,7 +537,7 @@ For Connect size compliance, re-capture on size-matched simulators or devices if
 
 Paste the **Your Answers** column values from the tables above into:
 
-Platforms · App Name · Primary Language · Bundle ID · SKU · User Access · Screenshots 1–6 · Promotional Text · Description · Keywords · Support URL · Version · Sign in Required · Notes · Copyright · Data Collection · App Availability · Price · In-App Purchase · Subscriptions
+Platforms · App Name · Primary Language · Bundle ID · SKU · User Access · Primary Category · Secondary Category · Screenshots 1–6 · Promotional Text · Description · Keywords · Support URL · Version · Sign in Required · Notes · Copyright · Data Collection · App Availability · Price · In-App Purchase · Subscriptions
 
 A filled Word document is also generated at:
 
